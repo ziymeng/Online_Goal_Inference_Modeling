@@ -111,6 +111,7 @@ function initializeGame()
     return {playerStartingPosition};
 }
 
+initializeGame();
 
 const movement$ = fromEvent(document, 'keydown').pipe(
     pluck('code'),
