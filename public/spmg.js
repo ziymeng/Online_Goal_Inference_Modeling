@@ -127,6 +127,7 @@ updatePlayerPos$.subscribe(newPosition => {
     });
 
 movement$.subscribe(newAction => {
-    code = newAction;
-    socket.emit('newAct', code)
-})
+    let action = [newAction.x, newAction.y];
+    socket.emit('newAct', action);
+});
+    
