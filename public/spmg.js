@@ -1,4 +1,4 @@
-const {fromEvent, range} = rxjs;
+const {fromEvent, range, withLatestFrom} = rxjs;
 const {map, filter, pluck, scan} = rxjs.operators;
 
 const canvas = document.getElementById('gameCanvas');
@@ -96,7 +96,6 @@ const movement$ = fromEvent(document, 'keydown').pipe(
             default: return { x: 0, y: 0 };
         }
     }))
-    // every time code emits, send back
 
     const updatePlayerPos$ = movement$.pipe(
         scan((playerPosition, movement) => {
@@ -118,16 +117,24 @@ function render(playerPosition)
         drawGoals(goalPosition1, goalPosition2, goalPosition3);
     }
 
-updatePlayerPos$.subscribe(newPosition => {
-        playerPosition = newPosition;
-        render(newPosition);
-        checkIfGoalReached(playerPosition, goalPosition1, goalPosition2, goalPosition3);
+const action_position$ = movement$.pipe(
+    withLatestFrom(updatePlayerPos$),
+    map(([action, newPosition]) => ({
+        action: [action.x, action.y],
+        position: newPosition
+    }))
+);
 
-        socket.emit('playerPosition', newPosition)
-    });
+// Subscribe to the combined observable
+action_position$.subscribe(({ action, position }) => {
+    render(position);
+    checkIfGoalReached(position, goalPosition1, goalPosition2, goalPosition3);
+    socket.emit('updatePrior', { action, position });
+});
 
-movement$.subscribe(newAction => {
-    let action = [newAction.x, newAction.y];
-    socket.emit('newAct', action);
+// Assuming the socket connection is already established
+socket.on('updatePosterior', function(posterior) {
+    console.log('Posterior:', posterior);
+    // Additional client-side logic based on the response
 });
     
