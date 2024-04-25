@@ -28,6 +28,8 @@
 # const PORT = 3000;
 # server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 
+from inference import UpdatePosteriorClass
+
 from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, emit
 from enum import Enum, unique
@@ -49,21 +51,20 @@ def on_connect():
 def on_disconnect():
     print('User disconnected')
 
-def updatePrior(newActPos):
-    return {
-        'goal1': round(random.random(), 2),
-        'goal2': round(random.random(), 2),
-        'goal3': round(random.random(), 2),
-    }
+# def updatePrior(newActPos):
+#     return {
+#         'goal1': round(random.random(), 2),
+#         'goal2': round(random.random(), 2),
+#         'goal3': round(random.random(), 2),
+#     }
+
+updatePosterior = UpdatePosteriorClass()
 
 @socketio.on('updatePrior')
 def handleNewAct(newActPos):
-    updated_ActionPosition = {
-        'action': tuple(newActPos['action']),
-        'position': newActPos['position']
-    }
-    print(updated_ActionPosition)
-    posterior = updatePrior(newActPos)
+    action = tuple(newActPos['action'])
+    print(action)
+    posterior = updatePosterior(action)
     emit('updatePosterior', posterior)
 
 if __name__ == '__main__':

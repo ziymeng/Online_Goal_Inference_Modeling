@@ -12,19 +12,24 @@ class UpdatePosteriorClass:
 
     
 
-    def get_posterior(self, pass_in_data_dict):
-        action = pass_in_data_dict['action']
+    # def get_posterior(self, pass_in_data_dict):
+    #     action = pass_in_data_dict['action']
+    #     posterior = {goal: self.likelihoods[goal][action] * self.priors[goal] for goal in self.priors}
+    #     total = sum(posterior.values())
+    #     normalized_posterior = {goal: posterior[goal] / total for goal in posterior}
+    #     self.priors = normalized_posterior
+    #     return normalized_posterior
+    
+    def __call__(self, action):
         posterior = {goal: self.likelihoods[goal][action] * self.priors[goal] for goal in self.priors}
         total = sum(posterior.values())
         normalized_posterior = {goal: posterior[goal] / total for goal in posterior}
         self.priors = normalized_posterior
         return normalized_posterior
-    
-    def __call__(self, pass_in_data_dic):
     # Assume passInDataDic should contain 'action' and 'position'
-        action = pass_in_data_dic['action']
-        position = pass_in_data_dic['position']
-        return self.get_posterior({'action': action, 'position': position})
+        # action = pass_in_data_dic['action']
+        # position = pass_in_data_dic['position']
+        # return self.get_posterior({'action': action, 'position': position})
 
 
 
