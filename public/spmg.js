@@ -3,10 +3,40 @@ const {map, filter, pluck, scan} = rxjs.operators;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
 const gridNumber = 10;
 const cellSize = canvas.width / gridNumber; 
+const goalNumber = 3;
+const playerStartingPosition = {x:0, y:0}; 
 
-const socket = io('http://localhost:3000');
+const socket = io('http://localhost:3000')
+
+//create a new data structure in a different line of code, it could a class/interface/ask gpt
+// a function called new that allows you to create new object
+//manually create each item in the array 
+let goals = Array.from({ length: goalNumber }, () => ({
+    coordinates: { x: null, y: null },
+    color: null,
+    opacity: null
+}));
+
+goals = [
+    {
+        coordinates : getRandomPosition(),
+        color: getRandomColor(),
+        opacity: Math.random()
+    },
+    {
+        coordinates : getRandomPosition(),
+        color: getRandomColor(),
+        opacity: Math.random()
+    },
+    {
+        coordinates : getRandomPosition(),
+        color: getRandomColor(),
+        opacity: Math.random()
+    },
+    ]
 
 function drawMap(){
     //other range function for repeating the code
@@ -15,14 +45,27 @@ function drawMap(){
             const x = (val%gridNumber) *cellSize;
             const y = Math.floor(val/gridNumber) *cellSize;
             ctx.strokeRect(x,y,cellSize, cellSize);
-        })
+        })}
+
+//if x or y is equal to zero, sample again
+function getRandomPosition(){
+    let x = 0;
+    let y = 0; 
+        while (x === 0 & y === 0){
+            x = Math.floor(Math.random() *gridNumber);
+            y = Math.floor(Math.random() *gridNumber);
+        }
+    return{ x, y }
 }
 
-function getRandomPosition(){
-    return{
-        x: Math.floor(Math.random() *gridNumber),
-        y: Math.floor(Math.random() *gridNumber)
-    }
+function getRandomColor() {
+    // Generate a random integer between 0 and 255 for each color component
+    const red = Math.floor(Math.random() * 256);   // Red component
+    const green = Math.floor(Math.random() * 256); // Green component
+    const blue = Math.floor(Math.random() * 256);  // Blue component
+
+    // Construct an RGB color string
+    return `rgb(${red}, ${green}, ${blue})`;
 }
 
 function drawPlayer(playerPosition){
@@ -32,58 +75,45 @@ function drawPlayer(playerPosition){
     ctx.fill();
 }
 
-function drawGoals(goalPosition1, goalPosition2, goalPosition3)
+function drawGoals(goals)
 {
-    //goal position 1
-    ctx.fillStyle = 'red';
-    ctx.fillRect(goalPosition1.x * cellSize, goalPosition1.y *cellSize, cellSize, cellSize);
-    
-    //goal position 2
-    ctx.fillStyle = 'purple';
-    ctx.fillRect(goalPosition2.x * cellSize, goalPosition2.y *cellSize, cellSize, cellSize);
-
-    //goal position 3
-    ctx.fillStyle = 'green';
-    ctx.fillRect(goalPosition3.x * cellSize, goalPosition3.y *cellSize, cellSize, cellSize);
-
+    goals.forEach(goal => {
+        ctx.fillStyle = goal.color;
+        ctx.globalAlpha = goal.opacity;
+        ctx.fillRect(goal.coordinates.x * cellSize, goal.coordinates.y *cellSize, cellSize, cellSize);
+    });
+    ctx.globalAlpha = 1;  
 }
 
-function correctInitialOverlap(goalPosition1, goalPosition2, goalPosition3){
-    while(goalPosition1.x === 0 && goalPosition1.y ===0 ||
-            goalPosition2.x === 0 && goalPosition2.y ===0 ||
-            goalPosition3.x === 0 && goalPosition3.y ===0)
-            {
-                 goalPosition1 = getRandomPosition();
-                 goalPosition2 = getRandomPosition();
-                 goalPosition3 = getRandomPosition();
-            }
-    return { goalPosition1, goalPosition2, goalPosition3 };
-}
-
-function checkIfGoalReached(playerPosition, goalPosition1, goalPosition2, goalPosition3){
-    if (playerPosition.x === goalPosition1.x && playerPosition.y === goalPosition1.y
-                || playerPosition.x === goalPosition2.x && playerPosition.y === goalPosition2.y 
-                || playerPosition.x === goalPosition3.x && playerPosition.y === goalPosition3.y ) {
-                alert('Congratulations! You reached the goal!');}
+//rejected sampling
+//generate again 
+//if you want to check, return a boolean
+//have another function do alerting and kill the program/unsubscribe the observable
+function isReached(playerPosition, goals){
+    goals.forEach( goal => {
+        if(goal.coordinates.x === playerPosition.x && goal.coordinates.y === playerPosition.y)
+        {
+            alert('Congratulation! You reached the goal!')
+            return true;
+        }}
+    )
 }
 
 function initializeGame()
 {
-    const playerStartingPosition = {x: 0, y:0}
-    let goalPosition1 = getRandomPosition();
-    let goalPosition2 = getRandomPosition();
-    let goalPosition3 = getRandomPosition();
-    ({ goalPosition1, goalPosition2, goalPosition3 } = correctInitialOverlap(goalPosition1, goalPosition2, goalPosition3));
-    drawGoals(goalPosition1, goalPosition2, goalPosition3);
+    goals.forEach(goal => {
+        goal.coordinates = getRandomPosition();
+        goal.color = getRandomColor(); 
+    })
+    drawGoals(goals);
     drawMap();
     drawPlayer(playerStartingPosition);
     console.log(playerStartingPosition);
-    return {playerStartingPosition, goalPosition1, goalPosition2, goalPosition3}
+    return {playerStartingPosition};
 }
 
-let {playerStartingPosition, goalPosition1, goalPosition2, goalPosition3} = initializeGame();
+initializeGame();
 
-console.log(playerStartingPosition);
 const movement$ = fromEvent(document, 'keydown').pipe(
     pluck('code'),
     filter(code => ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)),
@@ -97,44 +127,46 @@ const movement$ = fromEvent(document, 'keydown').pipe(
         }
     }))
 
-    const updatePlayerPos$ = movement$.pipe(
-        scan((playerPosition, movement) => {
-            return {
-                x: Math.max(0, Math.min(gridNumber - 1, playerPosition.x + movement.x)),
-                y: Math.max(0, Math.min(gridNumber - 1, playerPosition.y + movement.y))
-            };
-        }, playerStartingPosition)
-
-    // every time movement emits, send back
-    );
-
+const updatePlayerPos$ = movement$.pipe(
+    scan((playerPosition, movement) => {
+        console.log(playerPosition);
+        return {
+            x: Math.max(0, Math.min(gridNumber - 1, playerPosition.x + movement.x)),
+            y: Math.max(0, Math.min(gridNumber - 1, playerPosition.y + movement.y))
+        };
+    }, playerStartingPosition));
 
 function render(playerPosition)
     {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawMap();
         drawPlayer(playerPosition);
-        drawGoals(goalPosition1, goalPosition2, goalPosition3);
+        drawGoals(goals);
     }
 
-const action_position$ = movement$.pipe(
-    withLatestFrom(updatePlayerPos$),
-    map(([action, newPosition]) => ({
-        action: [action.x, action.y],
-        position: newPosition
-    }))
-);
-
-// Subscribe to the combined observable
-action_position$.subscribe(({ action, position }) => {
-    render(position);
-    checkIfGoalReached(position, goalPosition1, goalPosition2, goalPosition3);
-    socket.emit('updatePrior', { action, position });
-});
-
-// Assuming the socket connection is already established
-socket.on('updatePosterior', function(posterior) {
-    console.log('Posterior:', posterior);
-    // Additional client-side logic based on the response
-});
+    const action_position$ = movement$.pipe(
+        withLatestFrom(updatePlayerPos$),
+        map(([action, newPosition]) => ({
+            action: [action.x, action.y],
+            position: newPosition
+        }))
+    );
+    
+    // Subscribe to the combined observable
+    action_position$.subscribe(({ action, position }) => {
+        render(position);
+        playerPosition = position;
+        isReached(playerPosition, goals);
+        socket.emit('updatePrior', { action, position });
+    });
+    
+    // Assuming the socket connection is already established
+    socket.on('updatePosterior', function(posterior) {
+        console.log('Posterior:', posterior);
+        goals[0].opacity = posterior.goal1;
+        goals[1].opacity = posterior.goal2;
+        goals[2].opacity = posterior.goal3;
+        // Additional client-side logic based on the response
+    });
+        
     
