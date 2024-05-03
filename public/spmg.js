@@ -22,17 +22,17 @@ let goals = Array.from({ length: goalNumber }, () => ({
 
 goals = [
     {
-        coordinates : getRandomPosition(),
+        coordinates : {x: 3, y:4},
         color: getRandomColor(),
         opacity: Math.random()
     },
     {
-        coordinates : getRandomPosition(),
+        coordinates : {x: 2, y:8},
         color: getRandomColor(),
         opacity: Math.random()
     },
     {
-        coordinates : getRandomPosition(),
+        coordinates : {x: 7, y:2},
         color: getRandomColor(),
         opacity: Math.random()
     },
