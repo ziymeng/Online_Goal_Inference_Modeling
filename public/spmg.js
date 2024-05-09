@@ -2,6 +2,7 @@ const {fromEvent, range, withLatestFrom} = rxjs;
 const {map, filter, pluck, scan} = rxjs.operators;
 
 const canvas = document.getElementById('gameCanvas');
+const button = document.getElementById('clickMe');
 const ctx = canvas.getContext('2d');
 
 const gridNumber = 10;
@@ -11,9 +12,6 @@ const playerStartingPosition = {x:0, y:0};
 
 const socket = io('http://localhost:3000')
 
-//create a new data structure in a different line of code, it could a class/interface/ask gpt
-// a function called new that allows you to create new object
-//manually create each item in the array 
 let goals = Array.from({ length: goalNumber }, () => ({
     coordinates: { x: null, y: null },
     color: null,
@@ -112,6 +110,16 @@ function initializeGame()
     return {playerStartingPosition};
 }
 
+const playerReady$ = fromEvent(button, 'click')
+
+playerReady$.subscribe((button) => {
+    socket.emit('playerReady', 'Player is ready!')
+})
+
+socket.on('initializeGame', function(gameMap) {
+    console.log(gameMap)
+})
+
 initializeGame();
 
 const movement$ = fromEvent(document, 'keydown').pipe(
@@ -144,29 +152,29 @@ function render(playerPosition)
         drawGoals(goals);
     }
 
-    const action_position$ = movement$.pipe(
-        withLatestFrom(updatePlayerPos$),
-        map(([action, newPosition]) => ({
-            action: [action.x, action.y],
-            position: newPosition
-        }))
-    );
+const action_position$ = movement$.pipe(
+    withLatestFrom(updatePlayerPos$),
+    map(([action, newPosition]) => ({
+        action: [action.x, action.y],
+        position: newPosition
+    }))
+);
     
-    // Subscribe to the combined observable
-    action_position$.subscribe(({ action, position }) => {
-        render(position);
-        playerPosition = position;
-        isReached(playerPosition, goals);
-        socket.emit('updatePrior', { action, position });
-    });
-    
-    // Assuming the socket connection is already established
-    socket.on('updatePosterior', function(posterior) {
-        console.log('Posterior:', posterior);
-        goals[0].opacity = posterior.goal1;
-        goals[1].opacity = posterior.goal2;
-        goals[2].opacity = posterior.goal3;
-        // Additional client-side logic based on the response
-    });
+// Subscribe to the combined observable
+action_position$.subscribe(({ action, position }) => {
+    render(position);
+    playerPosition = position;
+    isReached(playerPosition, goals);
+    socket.emit('updatePrior', { action, position });
+});
+
+// Assuming the socket connection is already established
+socket.on('updatePosterior', function(posterior) {
+    console.log('Posterior:', posterior);
+    goals[0].opacity = posterior.goal1;
+    goals[1].opacity = posterior.goal2;
+    goals[2].opacity = posterior.goal3;
+    // Additional client-side logic based on the response
+});
         
     
