@@ -65,13 +65,18 @@ class SendingMaps:
         self.allMaps = [
             {
                 'playerPosition': (0, 0),
-                'goals': [(1, 1), (2, 3), (2, 4)],
-                'blocks': [(4, 5), (5, 6)]
+                'goals': [(8, 1), (7, 3), (1, 9)],
+                'blocks': []
             },
             {
-                'playerPosition': (1, 1),
-                'goals': [(3, 3), (4, 2), (2, 2)],
-                'blocks': [(6, 7), (7, 8)]
+                'playerPosition': (0, 0),
+                'goals': [(5, 4), (5, 7), (2, 7)],
+                'blocks': [(2,1),(2,2),(2,3),(4,3),(1,5),(3,5),(4,5),(1,6)]
+            },
+            {
+                'playerPosition': (0, 0),
+                'goals': [(10, 1), (10, 5), (10, 10)],
+                'blocks': [(5,1),(5,2),(8,2),(5,4),(5,5),(8,5),(8,6),(7,7),(7,8),(7,9)]
             }
             # Add more maps as required
         ]

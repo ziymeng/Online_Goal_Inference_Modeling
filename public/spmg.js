@@ -117,8 +117,8 @@ playerReady$.subscribe((button) => {
 })
 
 socket.on('initializeGame', function(gameMap) {
-    console.log(gameMap)
-})
+    console.log(gameMap)                                                                                                           
+})                                                                                                                                                                                         
 
 initializeGame();
 
