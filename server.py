@@ -56,26 +56,26 @@ class GameServer:
         ]
 
         self.app.add_url_rule('/', 'index', self.index)
-        self.socketio.on_event('connect', self.on_connect)
-        self.socketio.on_event('disconnect', self.on_disconnect)
-        self.socketio.on_event('playerReady', self.handle_player_ready)
-        self.socketio.on_event('updatePrior', self.handle_update_prior)
+        self.socketio.on_event('connect', self.onConnect)
+        self.socketio.on_event('disconnect', self.onDisconnect)
+        self.socketio.on_event('playerReady', self.handlePlayerReady)
+        self.socketio.on_event('updatePrior', self.handleUpdatePrior)
 
     def index(self):
         return send_from_directory('public', 'index.html')
 
-    def on_connect(self):
+    def onConnect(self):
         print('A user connected')
 
-    def on_disconnect(self):
+    def onDisconnect(self):
         print('User disconnected')
 
-    def handle_player_ready(self, button):
+    def handlePlayerReady(self, button):
         print('player ready')
         game_map = self.onDisplayReady()
         emit('initializeGame', game_map)
 
-    def handle_update_prior(self, newActPos):
+    def handleUpdatePrior(self, newActPos):
         action = tuple(newActPos['action'])
         print(action)
         posterior = self.updatePosterior(action)
