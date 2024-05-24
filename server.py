@@ -36,7 +36,6 @@ class GameServer:
     def __init__(self):
         self.app = Flask(__name__, static_url_path='', static_folder='public')
         self.socketio = SocketIO(self.app)
-        self.updatePosterior = UpdatePosteriorClass()
         self.allMaps = [
             {
                 'playerPosition': (0, 0),
@@ -73,6 +72,7 @@ class GameServer:
     def handlePlayerReady(self, button):
         print('player ready')
         game_map = self.onDisplayReady()
+        self.updatePosterior = UpdatePosteriorClass(game_map)
         emit('initializeGame', game_map)
 
     def handleUpdatePrior(self, newActPos):
