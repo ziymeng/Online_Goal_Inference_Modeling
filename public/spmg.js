@@ -7,37 +7,15 @@ const ctx = canvas.getContext('2d');
 
 const gridNumber = 10;
 const cellSize = canvas.width / gridNumber; 
-const goalNumber = 3;
 const playerStartingPosition = {x:0, y:0}; 
+
 
 const socket = io('http://localhost:3000')
 
-let goals = Array.from({ length: goalNumber }, () => ({
-    coordinates: { x: null, y: null },
-    color: null,
-    opacity: null
-}));
-
-goals = [
-    {
-        coordinates : getRandomPosition(),
-        color: getRandomColor(),
-        opacity: Math.random()
-    },
-    {
-        coordinates : getRandomPosition(),
-        color: getRandomColor(),
-        opacity: Math.random()
-    },
-    {
-        coordinates : getRandomPosition(),
-        color: getRandomColor(),
-        opacity: Math.random()
-    },
-    ]
+let goals = [];
+let blocks = [];
 
 function drawMap(){
-    //other range function for repeating the code
     range(0, gridNumber * gridNumber).subscribe(
         val => {
             const x = (val%gridNumber) *cellSize;
@@ -45,16 +23,24 @@ function drawMap(){
             ctx.strokeRect(x,y,cellSize, cellSize);
         })}
 
-//if x or y is equal to zero, sample again
-function getRandomPosition(){
-    let x = 0;
-    let y = 0; 
-        while (x === 0 & y === 0){
-            x = Math.floor(Math.random() *gridNumber);
-            y = Math.floor(Math.random() *gridNumber);
-        }
-    return{ x, y }
+function drawBlocks(blocks)
+{
+    blocks.forEach(block => {
+        ctx.fillStyle = 'brown';
+        ctx.globalAlpha = 1;
+        ctx.fillRect(block.x * cellSize, block.y *cellSize, cellSize, cellSize);
+    });
+    ctx.globalAlpha = 1; 
 }
+// function getRandomPosition(){
+//     let x = 0;
+//     let y = 0; 
+//         while (x === 0 & y === 0){
+//             x = Math.floor(Math.random() *gridNumber);
+//             y = Math.floor(Math.random() *gridNumber);
+//         }
+//     return{ x, y }
+// }
 
 function getRandomColor() {
     // Generate a random integer between 0 and 255 for each color component
@@ -78,37 +64,31 @@ function drawGoals(goals)
     goals.forEach(goal => {
         ctx.fillStyle = goal.color;
         ctx.globalAlpha = goal.opacity;
-        ctx.fillRect(goal.coordinates.x * cellSize, goal.coordinates.y *cellSize, cellSize, cellSize);
+        ctx.fillRect(goal.x * cellSize, goal.y *cellSize, cellSize, cellSize);
     });
     ctx.globalAlpha = 1;  
 }
 
-//rejected sampling
-//generate again 
-//if you want to check, return a boolean
-//have another function do alerting and kill the program/unsubscribe the observable
 function isReached(playerPosition, goals){
     goals.forEach( goal => {
-        if(goal.coordinates.x === playerPosition.x && goal.coordinates.y === playerPosition.y)
+        if(goal.x === playerPosition.x && goal.y === playerPosition.y)
         {
-            alert('Congratulation! You reached the goal!')
+            alert('Congratulation! You reached the goal! Click the Start Game button again to proceed to the next trial')
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMap();
             return true;
         }}
     )
 }
-
-function initializeGame()
+function isReachedBlock(playerPosition, blocks)
 {
-    goals.forEach(goal => {
-        goal.coordinates = getRandomPosition();
-        goal.color = getRandomColor(); 
-    })
-    drawGoals(goals);
-    drawMap();
-    drawPlayer(playerStartingPosition);
-    console.log(playerStartingPosition);
-    return {playerStartingPosition};
+    blocks.forEach(block => {
+        if(block.x === playerPosition.x && block.y === playerPosition.y)
+        {
+            return true;
+        }})
 }
+
 
 const playerReady$ = fromEvent(button, 'click')
 
@@ -116,11 +96,22 @@ playerReady$.subscribe((button) => {
     socket.emit('playerReady', 'Player is ready!')
 })
 
-socket.on('initializeGame', function(gameMap) {
-    console.log(gameMap)                                                                                                           
+socket.on('initializeGame', function(game_map) {
+    console.log(game_map)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for(let i = 0; i<game_map.goals.length; i++)
+    {
+        goals.push({x: game_map.goals[i][0], y:game_map.goals[i][1], color: getRandomColor(), opacity: 50});
+    }
+    for (let j = 0; j< game_map.blocks.length; j++ )
+    {
+        blocks.push({x: game_map.blocks[j][0], y:game_map.blocks[j][1]});
+    }
+    console.log(blocks);
+    console.log(goals);
+    render(playerStartingPosition);
+    return {playerStartingPosition};                                                                                                           
 })                                                                                                                                                                                         
-
-initializeGame();
 
 const movement$ = fromEvent(document, 'keydown').pipe(
     pluck('code'),
@@ -137,11 +128,22 @@ const movement$ = fromEvent(document, 'keydown').pipe(
 
 const updatePlayerPos$ = movement$.pipe(
     scan((playerPosition, movement) => {
-        console.log(playerPosition);
-        return {
+
+        let newPosition = {
             x: Math.max(0, Math.min(gridNumber - 1, playerPosition.x + movement.x)),
             y: Math.max(0, Math.min(gridNumber - 1, playerPosition.y + movement.y))
         };
+
+        // Check for collision with blocks
+        let isCollision = blocks.some(block => block.x === newPosition.x && block.y === newPosition.y);
+
+        // If there is a collision, revert to the old position
+        if (isCollision) {
+            newPosition = playerPosition;
+        }
+
+        // Return the new position
+        return newPosition;
     }, playerStartingPosition));
 
 function render(playerPosition)
@@ -150,6 +152,7 @@ function render(playerPosition)
         drawMap();
         drawPlayer(playerPosition);
         drawGoals(goals);
+        drawBlocks(blocks);
     }
 
 const action_position$ = movement$.pipe(
@@ -163,10 +166,11 @@ const action_position$ = movement$.pipe(
 // Subscribe to the combined observable
 action_position$.subscribe(({ action, position }) => {
     render(position);
+    console.log(position);
     playerPosition = position;
     isReached(playerPosition, goals);
     socket.emit('updatePrior', { action, position });
-});
+    });
 
 // Assuming the socket connection is already established
 socket.on('updatePosterior', function(posterior) {
