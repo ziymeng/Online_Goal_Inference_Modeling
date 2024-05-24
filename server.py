@@ -76,9 +76,11 @@ class GameServer:
         emit('initializeGame', game_map)
 
     def handleUpdatePrior(self, newActPos):
+        state = state = (newActPos['position']['x'], newActPos['position']['y'])
         action = tuple(newActPos['action'])
+        print(state)
         print(action)
-        posterior = self.updatePosterior(action)
+        posterior = self.updatePosterior(state, action)
         emit('updatePosterior', posterior)
 
     def onDisplayReady(self):
