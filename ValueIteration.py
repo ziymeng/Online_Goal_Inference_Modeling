@@ -39,7 +39,7 @@ class ValueIteration(object):
     
 class GetPolicy(object):
     
-    def __init__(self, stateSpace, actionSpaceFunction, transitionFunction, rewardFunction, gamma, V, roundingTolerance):
+    def __init__(self, stateSpace, actionSpaceFunction, transitionFunction, rewardFunction, gamma, V, roundingTolerance, temperature=5):
         self.stateSpace=stateSpace
         self.actionSpaceFunction=actionSpaceFunction
         self.transitionFunction=transitionFunction
@@ -47,6 +47,7 @@ class GetPolicy(object):
         self.gamma=gamma
         self.V=V
         self.roundingTolerance=roundingTolerance
+        self.temperature=temperature
         
     def __call__(self, s):
         Qs={a: sum([self.transitionFunction(s, a, sPrime)*(self.rewardFunction(s, a, sPrime)+self.gamma*self.V[sPrime]) for sPrime in self.stateSpace])\
@@ -54,6 +55,7 @@ class GetPolicy(object):
         # optimalActionList=[a for a in self.actionSpaceFunction(s) if abs(Qs[a]-max(Qs.values())) < self.roundingTolerance]
         # policy={a: 1/(len(optimalActionList)) for a in optimalActionList}
         QValues = np.array(list(Qs.values()))
+        QValues = QValues / self.temperature
         probabilities = softmax(QValues)
         policy = {a: probabilities[i] for i, a in enumerate(Qs.keys())}
         return policy
