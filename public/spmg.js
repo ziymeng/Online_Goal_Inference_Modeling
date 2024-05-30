@@ -76,6 +76,7 @@ function isReached(playerPosition, goals){
             alert('Congratulation! You reached the goal! Click the Start Game button again to proceed to the next trial')
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawMap();
+            action_position$.unsubscribe();
             return true;
         }}
     )
@@ -110,6 +111,14 @@ socket.on('initializeGame', function(game_map) {
     console.log(blocks);
     console.log(goals);
     render(playerStartingPosition);
+    // Subscribe to the combined observable
+    action_position$.subscribe(({ action, position }) => {
+    render(position);
+    console.log(position);
+    playerPosition = position;
+    isReached(playerPosition, goals);
+    socket.emit('updatePrior', { action, position });
+    });
     return {playerStartingPosition};                                                                                                           
 })                                                                                                                                                                                         
 
