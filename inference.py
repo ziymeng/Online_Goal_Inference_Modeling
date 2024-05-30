@@ -96,8 +96,9 @@ class UpdatePosteriorClass:
         self.goalInferenceMaps = goalInferenceMaps
     
     def __call__(self, stateAfterAction, action):
+        decayFactor=0.9
         state = tuple(np.array(stateAfterAction)-np.array(action))
-        posterior = {goal: self.getGoalLikelihood(goal, state, action) * self.priors[goal] for goal in self.priors}
+        posterior = {goal: self.getGoalLikelihood(goal, state, action) * (self.priors[goal])** decayFactor for goal in self.priors}
         total = sum(posterior.values())
         normalizedPosterior = {goal: posterior[goal] / total for goal in posterior}
         self.priors = normalizedPosterior
