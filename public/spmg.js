@@ -70,15 +70,12 @@ function drawGoals(goals)
 }
 
 function isReached(playerPosition, goals){
-    goals.forEach( goal => {
-        if(goal.x === playerPosition.x && goal.y === playerPosition.y)
-        {
-            alert('Congratulation! You reached the goal! Click the Start Game button again to proceed to the next trial')
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawMap();
+    for (let goal of goals) {
+        if (goal.x === playerPosition.x && goal.y === playerPosition.y) {
             return true;
-        }}
-    )
+        }
+    }
+    return false;
 }
 function isReachedBlock(playerPosition, blocks)
 {
@@ -86,9 +83,17 @@ function isReachedBlock(playerPosition, blocks)
         if(block.x === playerPosition.x && block.y === playerPosition.y)
         {
             return true;
+        }
+        else{
+            return false;
         }})
 }
 
+function clearMap()
+{
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawMap();
+}
 
 const playerReady$ = fromEvent(button, 'click')
 
@@ -110,6 +115,21 @@ socket.on('initializeGame', function(game_map) {
     console.log(blocks);
     console.log(goals);
     render(playerStartingPosition);
+    // Subscribe to the combined observable
+    const subscription = action_position$.subscribe(({ action, position }) => {
+        render(position);
+        console.log(position);
+        playerPosition = position;
+        if(isReached(playerPosition, goals))
+        {
+            alert('Congratulation! You reached the goal! Click the Start Game button again to proceed to the next trial')
+            clearMap();
+            subscription.unsubscribe();
+            goals.length = 0;
+            blocks.length = 0;
+        };
+        socket.emit('updatePrior', { action, position });
+        });
     return {playerStartingPosition};                                                                                                           
 })                                                                                                                                                                                         
 
@@ -162,15 +182,6 @@ const action_position$ = movement$.pipe(
         position: newPosition
     }))
 );
-    
-// Subscribe to the combined observable
-action_position$.subscribe(({ action, position }) => {
-    render(position);
-    console.log(position);
-    playerPosition = position;
-    isReached(playerPosition, goals);
-    socket.emit('updatePrior', { action, position });
-    });
 
 // Assuming the socket connection is already established
 socket.on('updatePosterior', function(posterior) {
