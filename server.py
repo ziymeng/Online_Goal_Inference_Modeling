@@ -40,7 +40,7 @@ class GameServer:
             {
                 'playerPosition': (0, 0),
                 'goals': [(8, 1), (7, 3), (1, 9)],
-                'blocks': []
+                'blocks': [(20,20)]
             },
             {
                 'playerPosition': (0, 0),
@@ -49,7 +49,7 @@ class GameServer:
             },
             {
                 'playerPosition': (0, 0),
-                'goals': [(10, 1), (10, 5), (10, 10)],
+                'goals': [(9, 1), (9, 5), (9, 9)],
                 'blocks': [(5,1),(5,2),(8,2),(5,4),(5,5),(8,5),(8,6),(7,7),(7,8),(7,9)]
             }
         ]
